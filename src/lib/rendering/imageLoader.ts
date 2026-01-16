@@ -109,9 +109,11 @@ export async function loadImage(src: string): Promise<HTMLImageElement> {
         const promise = loadImageDirect(webpPath);
         loadingPromises.set(src, promise);
         const img = await promise;
+        loadingPromises.delete(src); // Clean up PNG key after WebP load completes
         imageCache.set(src, img);
         return img;
       } catch {
+        loadingPromises.delete(src); // Clean up on failure too
         // WebP failed, fall back to PNG
       }
     }
