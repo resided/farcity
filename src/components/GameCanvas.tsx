@@ -93,21 +93,25 @@ export default function GameCanvas() {
   useEffect(() => {
     const loadSprites = async () => {
       try {
-        // Load main sprite sheet
-        try {
-          spriteSheetRef.current = await loadSpriteImage(SPRITE_SHEETS.main, true);
-        } catch {
-          spriteSheetRef.current = await loadSpriteImage(SPRITE_SHEETS.mainFallback, true);
-        }
+        // Load main sprite sheet - try without filtering first for debugging
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
         
-        // Load water sprite sheet
-        try {
-          waterSheetRef.current = await loadSpriteImage(SPRITE_SHEETS.water, false);
-        } catch {
-          waterSheetRef.current = await loadSpriteImage(SPRITE_SHEETS.waterFallback, false);
-        }
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => {
+            console.log('Sprite sheet loaded:', img.width, 'x', img.height);
+            spriteSheetRef.current = img;
+            resolve();
+          };
+          img.onerror = (e) => {
+            console.error('Failed to load sprite sheet:', e);
+            reject(e);
+          };
+          img.src = SPRITE_SHEETS.main;
+        });
         
         setSpritesLoaded(true);
+        console.log('Sprites ready!');
       } catch (error) {
         console.error('Failed to load sprite sheets:', error);
       }
@@ -165,7 +169,9 @@ export default function GameCanvas() {
     tileY: number
   ): boolean => {
     const sheet = spriteSheetRef.current;
-    if (!sheet) return false;
+    if (!sheet) {
+      return false;
+    }
     
     const renderInfo = getSpriteRenderInfo(
       buildingType,
@@ -177,31 +183,38 @@ export default function GameCanvas() {
       tileY
     );
     
-    if (!renderInfo) return false;
+    if (!renderInfo) {
+      return false;
+    }
     
     const { coords, drawX, drawY, destWidth, destHeight, shouldFlip } = renderInfo;
     
-    ctx.save();
-    
-    if (shouldFlip) {
-      ctx.translate(drawX + destWidth, drawY);
-      ctx.scale(-1, 1);
-      ctx.drawImage(
-        sheet,
-        coords.sx, coords.sy, coords.sw, coords.sh,
-        0, 0, destWidth, destHeight
-      );
-    } else {
-      ctx.drawImage(
-        sheet,
-        coords.sx, coords.sy, coords.sw, coords.sh,
-        drawX, drawY, destWidth, destHeight
-      );
+    try {
+      ctx.save();
+      
+      if (shouldFlip) {
+        ctx.translate(drawX + destWidth, drawY);
+        ctx.scale(-1, 1);
+        ctx.drawImage(
+          sheet,
+          coords.sx, coords.sy, coords.sw, coords.sh,
+          0, 0, destWidth, destHeight
+        );
+      } else {
+        ctx.drawImage(
+          sheet,
+          coords.sx, coords.sy, coords.sw, coords.sh,
+          drawX, drawY, destWidth, destHeight
+        );
+      }
+      
+      ctx.restore();
+      return true;
+    } catch (e) {
+      console.error('Error drawing sprite:', buildingType, e);
+      ctx.restore();
+      return false;
     }
-    
-    ctx.restore();
-    
-    return true;
   }, []);
   
   // Draw grass tile with sprite-like appearance
@@ -901,24 +914,30 @@ export default function GameCanvas() {
   };
   
   const handleMouseUp = (e: React.MouseEvent) => {
-    if (isDragging) {
+    const wasDragging = isDragging;
+    setIsDragging(false);
+    
+    if (wasDragging) {
       const dragDistance = Math.sqrt(
         Math.pow(e.clientX - (dragStart.x + offset.x), 2) +
         Math.pow(e.clientY - (dragStart.y + offset.y), 2)
       );
       
-      if (dragDistance < 5 && hoveredTile) {
+      // Click detected (not a drag)
+      if (dragDistance < 10 && hoveredTile) {
+        console.log('Click at tile:', hoveredTile.x, hoveredTile.y, 'tool:', selectedTool, 'building:', selectedBuilding);
+        
         if (selectedBuilding) {
-        const building = getBuildingById(selectedBuilding);
+          const building = getBuildingById(selectedBuilding);
           if (building && isValidPlacement(hoveredTile.x, hoveredTile.y, building, buildings, gridSize, getBuildingById)) {
-          placeBuilding(selectedBuilding, hoveredTile.x, hoveredTile.y);
+            placeBuilding(selectedBuilding, hoveredTile.x, hoveredTile.y);
           }
         } else if (selectedTool !== 'select') {
+          console.log('Calling placeAtTile for', selectedTool);
           placeAtTile(hoveredTile.x, hoveredTile.y);
         }
       }
     }
-    setIsDragging(false);
   };
   
   const handleWheel = (e: React.WheelEvent) => {
