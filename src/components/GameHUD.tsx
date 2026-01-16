@@ -83,6 +83,12 @@ const TOOL_ICONS: Record<Tool, React.ReactNode> = {
   zone_dezone: <div className="w-4 h-4 border-2 border-white/50" />,
   park: <div className="w-4 h-4 rounded-full bg-[#00aa55]" />,
   tree: <div className="w-3 h-5 rounded-t-full bg-[#228844]" />,
+  police_station: <div className="w-4 h-4 bg-[#3366ff]" />,
+  fire_station: <div className="w-4 h-4 bg-[#ff3333]" />,
+  hospital: <div className="w-4 h-4 bg-[#ff66aa]" />,
+  school: <div className="w-4 h-4 bg-[#ffcc00]" />,
+  power_plant: <div className="w-4 h-4 bg-[#ffff00]" />,
+  water_tower: <div className="w-4 h-4 bg-[#00ccff]" />,
 };
 
 export default function GameHUD() {
