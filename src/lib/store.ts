@@ -386,12 +386,39 @@ export const useGameStore = create<GameStore>()(
         const newGrid = [...state.grid.map(row => [...row])];
         const tile = newGrid[y][x];
         
+        // Tool costs
+        const toolCosts: Record<string, number> = {
+          bulldoze: 10,
+          road: 10,
+          rail: 20,
+          zone_residential: 5,
+          zone_commercial: 5,
+          zone_industrial: 5,
+          zone_dezone: 0,
+          park: 100,
+          tree: 5,
+          police_station: 500,
+          fire_station: 500,
+          hospital: 1000,
+          school: 500,
+          power_plant: 2000,
+          water_tower: 500,
+        };
+        
+        const cost = toolCosts[tool] || 0;
+        
+        // Check if we can afford it
+        if (cost > 0 && state.stats.money < cost) return;
+        
+        let placed = false;
+        
         switch (tool) {
           case 'road':
             if (tile.building.type !== 'water') {
               tile.type = 'road';
               tile.building = { ...tile.building, type: 'road' };
               tile.zone = 'none';
+              placed = true;
             }
             break;
             
@@ -400,6 +427,7 @@ export const useGameStore = create<GameStore>()(
               tile.type = 'rail';
               tile.building = { ...tile.building, type: 'rail' };
               tile.zone = 'none';
+              placed = true;
             }
             break;
             
@@ -408,6 +436,7 @@ export const useGameStore = create<GameStore>()(
               tile.type = 'park';
               tile.building = { ...tile.building, type: 'park' };
               tile.zone = 'none';
+              placed = true;
             }
             break;
             
@@ -415,26 +444,34 @@ export const useGameStore = create<GameStore>()(
             if (tile.building.type === 'grass' || tile.building.type === 'empty') {
               tile.type = 'tree';
               tile.building = { ...tile.building, type: 'tree' };
+              placed = true;
             }
             break;
             
           case 'zone_residential':
           case 'zone_commercial':
-          case 'zone_industrial':
+          case 'zone_industrial': {
             const zone = tool.replace('zone_', '') as ZoneType;
             if (tile.building.type === 'grass' || tile.building.type === 'empty') {
               tile.zone = zone;
+              placed = true;
             }
             break;
+          }
             
           case 'zone_dezone':
             tile.zone = 'none';
+            placed = true; // Always succeeds, no cost
             break;
             
           case 'bulldoze':
-            tile.type = 'grass';
-            tile.building = createTile(x, y).building;
-            tile.zone = 'none';
+            // Can bulldoze anything except water
+            if (tile.type !== 'water') {
+              tile.type = 'grass';
+              tile.building = createTile(x, y).building;
+              tile.zone = 'none';
+              placed = true;
+            }
             break;
             
           case 'police_station':
@@ -442,43 +479,32 @@ export const useGameStore = create<GameStore>()(
           case 'hospital':
           case 'school':
           case 'power_plant':
-          case 'water_tower': {
-            // Service buildings - check if tile is empty and we have enough money
-            if (tile.building.type !== 'grass' && tile.building.type !== 'empty') break;
-            
-            const costs: Record<string, number> = {
-              police_station: 500,
-              fire_station: 500,
-              hospital: 1000,
-              school: 500,
-              power_plant: 2000,
-              water_tower: 500,
-            };
-            
-            const cost = costs[tool] || 0;
-            if (state.stats.money < cost) break;
-            
-            // Place the service building
-            tile.type = 'building';
-            tile.building = {
-              ...tile.building,
-              type: 'building',
-              buildingId: tool,
-              level: 1,
-              constructionProgress: 100,
-            };
-            tile.zone = 'none';
-            
-            // Deduct cost
-            set({
-              grid: newGrid,
-              stats: { ...state.stats, money: state.stats.money - cost },
-            });
-            return; // Early return since we already called set
-          }
+          case 'water_tower':
+            // Service buildings - check if tile is empty
+            if (tile.building.type === 'grass' || tile.building.type === 'empty') {
+              tile.type = 'building';
+              tile.building = {
+                ...tile.building,
+                type: 'building',
+                buildingId: tool,
+                level: 1,
+                constructionProgress: 100,
+              };
+              tile.zone = 'none';
+              placed = true;
+            }
+            break;
         }
         
-        set({ grid: newGrid });
+        // Deduct cost if placement succeeded
+        if (placed && cost > 0) {
+          set({
+            grid: newGrid,
+            stats: { ...state.stats, money: state.stats.money - cost },
+          });
+        } else if (placed) {
+          set({ grid: newGrid });
+        }
       },
       
       setZone: (x, y, zone) => {
