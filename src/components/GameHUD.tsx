@@ -127,7 +127,12 @@ export default function GameHUD() {
   
   const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   
-  const tools: Tool[] = ['select', 'bulldoze', 'road', 'rail', 'zone_residential', 'zone_commercial', 'zone_industrial', 'zone_dezone', 'park', 'tree'];
+  const tools: Tool[] = [
+    'select', 'bulldoze', 'road', 'rail', 
+    'zone_residential', 'zone_commercial', 'zone_industrial', 'zone_dezone', 
+    'park', 'tree',
+    'police_station', 'fire_station', 'hospital', 'school', 'power_plant', 'water_tower'
+  ];
   
   return (
     <>

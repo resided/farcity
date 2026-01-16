@@ -655,11 +655,14 @@ export default function GameCanvas() {
             
             // Draw zone building using sprites
             if (tile.building.constructionProgress >= 100) {
-              // Determine building type based on zone and level
+              // Determine building type - check for service buildings first
               let buildingType: string;
               const level = tile.building.level;
               
-              if (tile.zone === 'residential') {
+              // Service buildings have a buildingId set
+              if (tile.building.buildingId) {
+                buildingType = tile.building.buildingId;
+              } else if (tile.zone === 'residential') {
                 if (level <= 1) buildingType = 'house_small';
                 else if (level <= 2) buildingType = 'house_medium';
                 else if (level <= 3) buildingType = 'mansion';
@@ -668,10 +671,13 @@ export default function GameCanvas() {
                 if (level <= 1) buildingType = 'shop_small';
                 else if (level <= 2) buildingType = 'shop_medium';
                 else buildingType = 'office_low';
-              } else {
+              } else if (tile.zone === 'industrial') {
                 if (level <= 1) buildingType = 'factory_small';
                 else if (level <= 2) buildingType = 'factory_medium';
                 else buildingType = 'warehouse';
+              } else {
+                // Fallback for service buildings without buildingId
+                buildingType = 'house_small';
               }
               
               // Try sprite rendering
@@ -903,9 +909,9 @@ export default function GameCanvas() {
       
       if (dragDistance < 5 && hoveredTile) {
         if (selectedBuilding) {
-          const building = getBuildingById(selectedBuilding);
+        const building = getBuildingById(selectedBuilding);
           if (building && isValidPlacement(hoveredTile.x, hoveredTile.y, building, buildings, gridSize, getBuildingById)) {
-            placeBuilding(selectedBuilding, hoveredTile.x, hoveredTile.y);
+          placeBuilding(selectedBuilding, hoveredTile.x, hoveredTile.y);
           }
         } else if (selectedTool !== 'select') {
           placeAtTile(hoveredTile.x, hoveredTile.y);

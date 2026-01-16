@@ -436,6 +436,46 @@ export const useGameStore = create<GameStore>()(
             tile.building = createTile(x, y).building;
             tile.zone = 'none';
             break;
+            
+          case 'police_station':
+          case 'fire_station':
+          case 'hospital':
+          case 'school':
+          case 'power_plant':
+          case 'water_tower': {
+            // Service buildings - check if tile is empty and we have enough money
+            if (tile.building.type !== 'grass' && tile.building.type !== 'empty') break;
+            
+            const costs: Record<string, number> = {
+              police_station: 500,
+              fire_station: 500,
+              hospital: 1000,
+              school: 500,
+              power_plant: 2000,
+              water_tower: 500,
+            };
+            
+            const cost = costs[tool] || 0;
+            if (state.stats.money < cost) break;
+            
+            // Place the service building
+            tile.type = 'building';
+            tile.building = {
+              ...tile.building,
+              type: 'building',
+              buildingId: tool,
+              level: 1,
+              constructionProgress: 100,
+            };
+            tile.zone = 'none';
+            
+            // Deduct cost
+            set({
+              grid: newGrid,
+              stats: { ...state.stats, money: state.stats.money - cost },
+            });
+            return; // Early return since we already called set
+          }
         }
         
         set({ grid: newGrid });
