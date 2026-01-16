@@ -1,11 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --color-background: #0a0a12;
-  --color-foreground: #ffffff;
-  --color-primary: #8B5CF6;
-  --color-primary-light: #A78BFA;
-  --color-accent: #F59E0B;
+  /* Nike-inspired 2026 color palette */
+  --color-void: #000000;
+  --color-carbon: #0a0a0a;
+  --color-graphite: #1a1a1a;
+  --color-steel: #2a2a2a;
+  --color-titanium: #3a3a3a;
+  --color-chrome: #ffffff;
+  --color-silver: #a0a0a0;
+  --color-mercury: #666666;
+  
+  /* Accent colors - electric */
+  --color-volt: #c8ff00;
+  --color-laser: #ff0040;
+  --color-cyber: #00ffff;
+  --color-neon: #ff00ff;
+  
+  /* Functional colors */
+  --color-success: #00ff88;
+  --color-warning: #ffaa00;
+  --color-danger: #ff3366;
 }
 
 * {
@@ -17,170 +32,323 @@ html {
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+  background: var(--color-void);
+  color: var(--color-chrome);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
   overflow: hidden;
   position: fixed;
   width: 100%;
   height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Scrollbar */
+/* Nike-style typography */
+.text-display {
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.text-headline {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.text-body {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.text-caption {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+/* Custom Scrollbar - minimal */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.5);
-  border-radius: 4px;
+  background: var(--color-steel);
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.7);
+  background: var(--color-titanium);
 }
 
-/* Glow Effects */
-.glow-violet {
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3),
-              0 0 40px rgba(139, 92, 246, 0.2),
-              0 0 60px rgba(139, 92, 246, 0.1);
+/* Nike Swoosh-inspired curves */
+.swoosh {
+  position: relative;
 }
 
-.glow-amber {
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.3),
-              0 0 40px rgba(245, 158, 11, 0.2),
-              0 0 60px rgba(245, 158, 11, 0.1);
+.swoosh::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-volt), transparent);
+  transform: skewX(-45deg);
 }
 
-.glow-emerald {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3),
-              0 0 40px rgba(16, 185, 129, 0.2),
-              0 0 60px rgba(16, 185, 129, 0.1);
+/* Glow Effects - electric */
+.glow-volt {
+  box-shadow: 0 0 20px rgba(200, 255, 0, 0.4),
+              0 0 40px rgba(200, 255, 0, 0.2);
+}
+
+.glow-laser {
+  box-shadow: 0 0 20px rgba(255, 0, 64, 0.4),
+              0 0 40px rgba(255, 0, 64, 0.2);
+}
+
+.glow-cyber {
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4),
+              0 0 40px rgba(0, 255, 255, 0.2);
 }
 
 /* Animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+@keyframes pulse-line {
+  0%, 100% { transform: scaleX(0); opacity: 0; }
+  50% { transform: scaleX(1); opacity: 1; }
 }
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+@keyframes slide-in {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(0); }
 }
 
-@keyframes sparkle {
-  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
-  50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
+@keyframes fade-up {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+.animate-pulse-line {
+  animation: pulse-line 2s ease-in-out infinite;
 }
 
-.animate-sparkle {
-  animation: sparkle 2s ease-in-out infinite;
+.animate-slide-in {
+  animation: slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Gradient Text */
-.gradient-text {
-  background: linear-gradient(135deg, #8B5CF6, #A78BFA, #C4B5FD);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Glass Effect */
-.glass {
+/* Glass Effect - dark mode */
+.glass-dark {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Button styles - Nike inspired */
+.btn-primary {
+  background: var(--color-chrome);
+  color: var(--color-void);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary:hover {
+  background: var(--color-volt);
+  transform: scale(1.02);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-chrome);
+  border: 1px solid var(--color-steel);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-ghost:hover {
+  border-color: var(--color-chrome);
   background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Building Card Hover */
-.building-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Zone indicators */
+.zone-residential {
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
 }
 
-.building-card:hover {
-  transform: translateY(-4px);
+.zone-commercial {
+  background: linear-gradient(135deg, #0088ff, #0066cc);
 }
 
-/* Button Press Effect */
-.btn-press {
-  transition: transform 0.1s ease;
+.zone-industrial {
+  background: linear-gradient(135deg, #ffaa00, #cc8800);
 }
 
-.btn-press:active {
-  transform: scale(0.95);
+/* Card styles */
+.card {
+  background: var(--color-graphite);
+  border: 1px solid var(--color-steel);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Rarity Gradients */
-.rarity-common {
-  background: linear-gradient(135deg, #6B7280, #4B5563);
+.card:hover {
+  border-color: var(--color-titanium);
+  transform: translateY(-2px);
 }
 
-.rarity-uncommon {
-  background: linear-gradient(135deg, #10B981, #059669);
+/* Progress bar */
+.progress-bar {
+  background: var(--color-steel);
+  border-radius: 0;
+  overflow: hidden;
 }
 
-.rarity-rare {
-  background: linear-gradient(135deg, #3B82F6, #2563EB);
+.progress-fill {
+  background: linear-gradient(90deg, var(--color-volt), var(--color-cyber));
+  height: 100%;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.rarity-epic {
-  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+/* Grid lines */
+.grid-lines {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
-.rarity-legendary {
-  background: linear-gradient(135deg, #F59E0B, #D97706);
-}
-
-/* Mobile Touch */
-@media (hover: none) {
-  .hover\:scale-105:hover {
-    transform: none;
-  }
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
+/* Hide scrollbar */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-/* Canvas Cursor */
+/* Canvas */
 canvas {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* Loading dots animation */
-@keyframes loading-dots {
-  0%, 20% { content: '.'; }
-  40% { content: '..'; }
-  60% { content: '...'; }
-  80%, 100% { content: ''; }
+/* Stats display */
+.stat-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
-.loading-dots::after {
-  content: '';
-  animation: loading-dots 1.5s infinite;
+/* Tooltip */
+.tooltip {
+  background: var(--color-carbon);
+  border: 1px solid var(--color-steel);
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Loading state */
+@keyframes loading-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.loading {
+  animation: loading-pulse 1.5s ease-in-out infinite;
+}
+
+/* Selection highlight */
+.selected {
+  outline: 2px solid var(--color-volt);
+  outline-offset: 2px;
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-steel), transparent);
+}
+
+/* Icon container */
+.icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--color-graphite);
+  border: 1px solid var(--color-steel);
+}
+
+/* Tag/badge */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--color-steel);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.tag-volt {
+  background: var(--color-volt);
+  color: var(--color-void);
+}
+
+.tag-laser {
+  background: var(--color-laser);
+  color: var(--color-chrome);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .text-display {
+    font-size: 2rem;
+  }
+  
+  .text-headline {
+    font-size: 1.25rem;
+  }
 }

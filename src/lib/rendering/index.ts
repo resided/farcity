@@ -5,3 +5,5 @@ export * from './utils';
 export * from './drawing';
 export * from './vehicles';
 export * from './pedestrians';
+export * from './imageLoader';
+export * from './spriteConfig';

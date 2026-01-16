@@ -1,25 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore, getAvailableBuildings } from '@/lib/store';
-import { Coins, Plus, Gift, Trophy, Users, Bell } from 'lucide-react';
+import { Plus, Gift, Trophy, Users } from 'lucide-react';
+
+// Icon components
+function IconCollect({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v12M9 9h6M9 15h6" />
+    </svg>
+  );
+}
 
 export default function QuickBar() {
   const { 
-    cast, 
     level, 
     collectIncome, 
     setShowShop,
     calculateIncome,
-    buildings,
   } = useGameStore();
   
   const [showDailyReward, setShowDailyReward] = useState(false);
   const [collectedAmount, setCollectedAmount] = useState(0);
   const [showCollected, setShowCollected] = useState(false);
   
-  const availableBuildings = getAvailableBuildings(level);
   const income = calculateIncome();
   
   const handleCollect = () => {
@@ -32,7 +39,6 @@ export default function QuickBar() {
   };
   
   const handleDailyReward = () => {
-    // Simulate daily reward
     setShowDailyReward(true);
   };
   
@@ -44,62 +50,62 @@ export default function QuickBar() {
         animate={{ x: 0 }}
         className="fixed left-4 top-1/2 -translate-y-1/2 z-40"
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {/* Collect Button */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleCollect}
             disabled={income === 0}
-            className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+            className="relative w-12 h-12 bg-[#00ff88] flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#00cc6a]"
           >
-            <Coins className="w-6 h-6 text-white" />
+            <IconCollect className="w-5 h-5 text-black" />
             {income > 0 && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-white">$</span>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#ff3366] flex items-center justify-center">
+                <span className="text-[8px] font-bold text-white">$</span>
               </div>
             )}
           </motion.button>
           
           {/* Build Button */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowShop(true)}
-            className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 transition-shadow"
+            className="w-12 h-12 bg-white flex items-center justify-center transition-all hover:bg-[#c8ff00]"
           >
-            <Plus className="w-6 h-6 text-white" />
+            <Plus className="w-5 h-5 text-black" />
           </motion.button>
           
           {/* Daily Reward */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleDailyReward}
-            className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 transition-shadow"
+            className="relative w-12 h-12 bg-[#ffaa00] flex items-center justify-center transition-all hover:bg-[#cc8800]"
           >
-            <Gift className="w-6 h-6 text-white" />
-            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center animate-bounce">
-              <span className="text-[10px] font-bold text-white">!</span>
+            <Gift className="w-5 h-5 text-black" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#ff3366] flex items-center justify-center animate-pulse">
+              <span className="text-[8px] font-bold text-white">!</span>
             </div>
           </motion.button>
           
           {/* Leaderboard */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-shadow"
+            className="w-12 h-12 glass-dark flex items-center justify-center transition-all hover:bg-white/10"
           >
-            <Trophy className="w-6 h-6 text-white" />
+            <Trophy className="w-5 h-5 text-[#666]" />
           </motion.button>
           
           {/* Friends */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-shadow"
+            className="w-12 h-12 glass-dark flex items-center justify-center transition-all hover:bg-white/10"
           >
-            <Users className="w-6 h-6 text-white" />
+            <Users className="w-5 h-5 text-[#666]" />
           </motion.button>
         </div>
       </motion.div>
@@ -112,8 +118,8 @@ export default function QuickBar() {
           transition={{ duration: 2 }}
           className="fixed left-20 top-1/2 -translate-y-1/2 z-50"
         >
-          <div className="bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold shadow-lg">
-            +{collectedAmount.toLocaleString()} Coins
+          <div className="bg-[#00ff88] text-black px-4 py-2 text-caption text-sm">
+            +{collectedAmount.toLocaleString()} COINS
           </div>
         </motion.div>
       )}
@@ -124,35 +130,35 @@ export default function QuickBar() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setShowDailyReward(false)}
         >
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
+            exit={{ scale: 0.95, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-gradient-to-br from-amber-900/90 to-yellow-900/90 backdrop-blur-xl rounded-3xl p-8 border border-amber-400/50 max-w-md w-full text-center"
+            className="bg-[#0a0a0a] border border-[#2a2a2a] p-8 max-w-md w-full text-center"
           >
-            <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center mb-6 shadow-lg shadow-amber-500/50">
-              <Gift className="w-12 h-12 text-white" />
+            <div className="w-20 h-20 mx-auto bg-[#ffaa00] flex items-center justify-center mb-6">
+              <Gift className="w-10 h-10 text-black" />
             </div>
             
-            <h2 className="text-3xl font-bold text-white mb-2">Daily Reward!</h2>
-            <p className="text-amber-200 mb-6">Come back every day for bigger rewards!</p>
+            <h2 className="text-headline text-2xl text-white mb-2">DAILY REWARD</h2>
+            <p className="text-body text-sm text-[#666] mb-6">Return daily for bigger rewards</p>
             
             <div className="grid grid-cols-7 gap-2 mb-6">
               {[100, 150, 200, 300, 400, 500, 1000].map((reward, i) => (
                 <div
                   key={i}
-                  className={`p-2 rounded-lg ${
+                  className={`p-2 ${
                     i === 0
-                      ? 'bg-amber-500 ring-2 ring-white'
-                      : 'bg-white/10'
+                      ? 'bg-[#ffaa00] text-black'
+                      : 'bg-[#1a1a1a] text-[#666]'
                   }`}
                 >
-                  <div className="text-xs text-amber-200">Day {i + 1}</div>
-                  <div className="font-bold text-white text-sm">{reward}</div>
+                  <div className="text-caption text-[8px]">D{i + 1}</div>
+                  <div className="stat-value text-xs">{reward}</div>
                 </div>
               ))}
             </div>
@@ -160,11 +166,10 @@ export default function QuickBar() {
             <button
               onClick={() => {
                 setShowDailyReward(false);
-                // Add reward logic here
               }}
-              className="w-full bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold py-4 rounded-xl hover:from-amber-300 hover:to-yellow-400 transition-all text-lg"
+              className="w-full btn-primary py-4 text-sm"
             >
-              Claim 100 Coins
+              CLAIM 100 COINS
             </button>
           </motion.div>
         </motion.div>

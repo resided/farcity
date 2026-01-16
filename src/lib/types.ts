@@ -401,22 +401,22 @@ export interface ToolInfo {
 }
 
 export const TOOL_INFO: Record<Tool, ToolInfo> = {
-  select: { name: 'Select', description: 'View tile info', cost: 0, icon: '👆', category: 'selection' },
-  bulldoze: { name: 'Bulldoze', description: 'Remove structures', cost: 10, icon: '🚧', category: 'selection' },
-  road: { name: 'Road', description: 'Build roads', cost: 10, icon: '🛣️', category: 'roads' },
-  rail: { name: 'Rail', description: 'Build rail tracks', cost: 20, icon: '🚂', category: 'roads' },
-  zone_residential: { name: 'Residential', description: 'Zone for housing', cost: 5, icon: '🏠', category: 'zones' },
-  zone_commercial: { name: 'Commercial', description: 'Zone for shops', cost: 5, icon: '🏪', category: 'zones' },
-  zone_industrial: { name: 'Industrial', description: 'Zone for factories', cost: 5, icon: '🏭', category: 'zones' },
-  zone_dezone: { name: 'De-zone', description: 'Remove zoning', cost: 0, icon: '❌', category: 'zones' },
-  park: { name: 'Park', description: 'Build a park', cost: 100, icon: '🌳', category: 'services' },
-  tree: { name: 'Tree', description: 'Plant a tree', cost: 5, icon: '🌲', category: 'services' },
-  police_station: { name: 'Police', description: 'Reduce crime', cost: 500, icon: '🚔', category: 'services' },
-  fire_station: { name: 'Fire Dept', description: 'Fire protection', cost: 500, icon: '🚒', category: 'services' },
-  hospital: { name: 'Hospital', description: 'Healthcare', cost: 1000, icon: '🏥', category: 'services' },
-  school: { name: 'School', description: 'Education', cost: 500, icon: '🏫', category: 'services' },
-  power_plant: { name: 'Power Plant', description: 'Generate power', cost: 2000, icon: '⚡', category: 'utilities' },
-  water_tower: { name: 'Water Tower', description: 'Water supply', cost: 500, icon: '💧', category: 'utilities' },
+  select: { name: 'SELECT', description: 'View tile info', cost: 0, icon: 'grid', category: 'selection' },
+  bulldoze: { name: 'BULLDOZE', description: 'Remove structures', cost: 10, icon: 'x', category: 'selection' },
+  road: { name: 'ROAD', description: 'Build roads', cost: 10, icon: 'minus', category: 'roads' },
+  rail: { name: 'RAIL', description: 'Build rail tracks', cost: 20, icon: 'track', category: 'roads' },
+  zone_residential: { name: 'RESIDENTIAL', description: 'Zone for housing', cost: 5, icon: 'res', category: 'zones' },
+  zone_commercial: { name: 'COMMERCIAL', description: 'Zone for shops', cost: 5, icon: 'com', category: 'zones' },
+  zone_industrial: { name: 'INDUSTRIAL', description: 'Zone for factories', cost: 5, icon: 'ind', category: 'zones' },
+  zone_dezone: { name: 'DE-ZONE', description: 'Remove zoning', cost: 0, icon: 'dezone', category: 'zones' },
+  park: { name: 'PARK', description: 'Build a park', cost: 100, icon: 'park', category: 'services' },
+  tree: { name: 'TREE', description: 'Plant a tree', cost: 5, icon: 'tree', category: 'services' },
+  police_station: { name: 'POLICE', description: 'Reduce crime', cost: 500, icon: 'police', category: 'services' },
+  fire_station: { name: 'FIRE DEPT', description: 'Fire protection', cost: 500, icon: 'fire', category: 'services' },
+  hospital: { name: 'HOSPITAL', description: 'Healthcare', cost: 1000, icon: 'health', category: 'services' },
+  school: { name: 'SCHOOL', description: 'Education', cost: 500, icon: 'edu', category: 'services' },
+  power_plant: { name: 'POWER', description: 'Generate power', cost: 2000, icon: 'power', category: 'utilities' },
+  water_tower: { name: 'WATER', description: 'Water supply', cost: 500, icon: 'water', category: 'utilities' },
 };
 
 export interface Achievement {

@@ -11,6 +11,16 @@ const Shop = dynamic(() => import('@/components/Shop'), { ssr: false });
 const BuildingPanel = dynamic(() => import('@/components/BuildingPanel'), { ssr: false });
 const QuickBar = dynamic(() => import('@/components/QuickBar'), { ssr: false });
 
+// Nike-inspired logo mark
+function LogoMark({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" className={className} fill="currentColor">
+      <path d="M10 70 L30 30 L50 50 L70 20 L90 40 L70 60 L50 45 L30 70 Z" />
+      <rect x="20" y="72" width="60" height="4" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -21,88 +31,107 @@ export default function Home() {
       setLoadingProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          setTimeout(() => setIsLoading(false), 500);
+          setTimeout(() => setIsLoading(false), 300);
           return 100;
         }
-        return prev + Math.random() * 15;
+        return prev + Math.random() * 20;
       });
-    }, 100);
+    }, 80);
     
     return () => clearInterval(interval);
   }, []);
   
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a12] flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
+        {/* Grid background */}
+        <div className="absolute inset-0 grid-lines opacity-30" />
+        
+        {/* Scan line effect */}
+        <motion.div
+          className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#c8ff00] to-transparent"
+          initial={{ top: '-10%' }}
+          animate={{ top: '110%' }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+        />
+        
+        <div className="text-center relative z-10">
           {/* Logo */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="mb-12"
           >
-            <div className="w-32 h-32 mx-auto rounded-3xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-violet-500/50 mb-6">
-              <span className="text-6xl">🏙️</span>
-            </div>
-            <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
-              Claudity
+            <LogoMark className="w-20 h-20 mx-auto text-white mb-8" />
+            <h1 className="text-display text-6xl md:text-8xl text-white tracking-tighter">
+              FARCITY
             </h1>
-            <p className="text-gray-400 mt-2 text-lg">Build Your Empire</p>
+            <div className="h-1 w-32 mx-auto mt-4 bg-gradient-to-r from-[#c8ff00] to-[#00ffff]" />
           </motion.div>
           
           {/* Loading Bar */}
-          <div className="w-64 mx-auto">
-            <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="w-80 mx-auto"
+          >
+            <div className="h-1 bg-[#1a1a1a] overflow-hidden">
               <motion.div
-                className="h-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500"
+                className="h-full bg-white"
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(loadingProgress, 100)}%` }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
               />
             </div>
-            <div className="text-gray-500 text-sm mt-2">
-              {loadingProgress < 30 && 'Initializing city...'}
-              {loadingProgress >= 30 && loadingProgress < 60 && 'Loading buildings...'}
-              {loadingProgress >= 60 && loadingProgress < 90 && 'Preparing your empire...'}
-              {loadingProgress >= 90 && 'Ready to build!'}
+            <div className="flex justify-between mt-3">
+              <span className="text-caption text-[#666]">
+                {loadingProgress < 100 ? 'LOADING' : 'READY'}
+              </span>
+              <span className="text-caption text-[#666]">
+                {Math.min(Math.round(loadingProgress), 100)}%
+              </span>
             </div>
-          </div>
+          </motion.div>
           
-          {/* Features Preview */}
+          {/* Features */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-12 grid grid-cols-3 gap-4 max-w-md mx-auto"
+            transition={{ delay: 0.4, duration: 0.4 }}
+            className="mt-16 flex justify-center gap-12"
           >
             {[
-              { icon: '🏗️', label: 'Build' },
-              { icon: '💰', label: 'Earn' },
-              { icon: '🚀', label: 'Grow' },
+              { label: 'BUILD', value: '01' },
+              { label: 'GROW', value: '02' },
+              { label: 'DOMINATE', value: '03' },
             ].map((item, i) => (
-              <div
-                key={i}
-                className="bg-white/5 rounded-xl p-4 border border-white/10"
-              >
-                <div className="text-3xl mb-2">{item.icon}</div>
-                <div className="text-gray-400 text-sm">{item.label}</div>
+              <div key={i} className="text-center">
+                <div className="text-caption text-[#444] mb-1">{item.value}</div>
+                <div className="text-headline text-sm text-white">{item.label}</div>
               </div>
             ))}
           </motion.div>
+          
+          {/* Tagline */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="text-caption text-[#666] mt-16"
+          >
+            JUST BUILD IT
+          </motion.p>
         </div>
       </div>
     );
   }
   
   return (
-    <main className="relative min-h-screen bg-[#0a0a12] overflow-hidden">
-      {/* Background Gradient */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-violet-900/20 via-transparent to-purple-900/20" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-      </div>
+    <main className="relative min-h-screen bg-black overflow-hidden">
+      {/* Grid background */}
+      <div className="fixed inset-0 pointer-events-none grid-lines opacity-10" />
       
       {/* Game Canvas */}
       <GameCanvas />
@@ -120,13 +149,18 @@ export default function Home() {
         transition={{ delay: 1 }}
         className="fixed bottom-4 right-4 z-40"
       >
-        <div className="bg-gray-900/80 backdrop-blur-lg rounded-xl px-4 py-3 border border-white/10 max-w-xs">
-          <p className="text-gray-300 text-sm">
-            <span className="text-violet-400 font-semibold">Tip:</span> Drag to pan the map. 
-            Click the <span className="text-violet-400">+</span> button to build!
+        <div className="glass-dark px-4 py-3 max-w-xs">
+          <p className="text-body text-sm text-[#a0a0a0]">
+            <span className="text-[#c8ff00] font-semibold">TIP</span> 
+            {' '}Drag to pan. Click + to build.
           </p>
         </div>
       </motion.div>
+      
+      {/* Version tag */}
+      <div className="fixed bottom-4 left-4 z-40">
+        <span className="tag">V 0.1.0</span>
+      </div>
     </main>
   );
 }

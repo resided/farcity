@@ -3,34 +3,91 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '@/lib/store';
 import { 
-  Coins, 
-  Diamond, 
-  Star, 
   TrendingUp, 
-  Building2, 
-  ShoppingBag,
-  Zap,
   Menu,
   X,
-  Users,
-  Briefcase,
   Play,
   Pause,
   FastForward,
-  Calendar,
-  DollarSign,
+  Plus,
+  Minus,
+  Grid3X3,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TOOL_INFO, Tool } from '@/lib/types';
 
+// Icon components
+function IconMoney({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v12M9 9h6M9 15h6" />
+    </svg>
+  );
+}
+
+function IconPeople({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="7" r="4" />
+      <path d="M5.5 21a6.5 6.5 0 0113 0" />
+    </svg>
+  );
+}
+
+function IconWork({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="2" y="7" width="20" height="14" rx="2" />
+      <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
+    </svg>
+  );
+}
+
+function IconCalendar({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
+function IconShop({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 7l2-3h12l2 3" />
+      <rect x="3" y="7" width="18" height="13" rx="1" />
+      <path d="M12 7v13M6 11h0M18 11h0" />
+    </svg>
+  );
+}
+
+function IconZap({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+
+// Tool icons without emojis
+const TOOL_ICONS: Record<Tool, React.ReactNode> = {
+  select: <Grid3X3 className="w-5 h-5" />,
+  bulldoze: <X className="w-5 h-5" />,
+  road: <Minus className="w-5 h-5 rotate-45" />,
+  rail: <Minus className="w-5 h-5" />,
+  zone_residential: <div className="w-4 h-4 bg-[#00ff88]" />,
+  zone_commercial: <div className="w-4 h-4 bg-[#0088ff]" />,
+  zone_industrial: <div className="w-4 h-4 bg-[#ffaa00]" />,
+  zone_dezone: <div className="w-4 h-4 border-2 border-white/50" />,
+  park: <div className="w-4 h-4 rounded-full bg-[#00aa55]" />,
+  tree: <div className="w-3 h-5 rounded-t-full bg-[#228844]" />,
+};
+
 export default function GameHUD() {
   const {
-    cast,
-    premium,
     level,
-    xp,
-    xpToNextLevel,
-    buildings,
     stats,
     speed,
     year,
@@ -45,23 +102,16 @@ export default function GameHUD() {
     collectIncome,
   } = useGameStore();
   
-  const [income, setIncome] = useState(0);
   const [boostMultiplier, setBoostMultiplier] = useState(1);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showToolbar, setShowToolbar] = useState(false);
   
   useEffect(() => {
-    setIncome(calculateIncome());
     setBoostMultiplier(calculateBoostMultiplier());
-  }, [buildings, calculateIncome, calculateBoostMultiplier]);
+  }, [calculateBoostMultiplier]);
   
-  // Auto-collect on mount
   useEffect(() => {
-    const collected = collectIncome();
-    if (collected > 0) {
-      // Could show a notification here
-    }
-  }, []);
+    collectIncome();
+  }, [collectIncome]);
   
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -69,7 +119,7 @@ export default function GameHUD() {
     return num.toFixed(0);
   };
   
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   
   const tools: Tool[] = ['select', 'bulldoze', 'road', 'rail', 'zone_residential', 'zone_commercial', 'zone_industrial', 'zone_dezone', 'park', 'tree'];
   
@@ -81,134 +131,129 @@ export default function GameHUD() {
         animate={{ y: 0 }}
         className="fixed top-0 left-0 right-0 z-50"
       >
-        <div className="bg-gradient-to-b from-black/80 to-transparent p-4">
+        <div className="bg-gradient-to-b from-black via-black/90 to-transparent p-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            {/* Left - Logo & Level */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
-                  <span className="text-xl">🏙️</span>
+            {/* Left - Logo & Date */}
+            <div className="flex items-center gap-6">
+              {/* Logo */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white flex items-center justify-center">
+                  <span className="text-headline text-black text-xs">FC</span>
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="font-bold text-white tracking-tight">FarCity</h1>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                    <span className="text-xs text-gray-400">Level {level}</span>
+                  <h1 className="text-headline text-sm text-white">FARCITY</h1>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="tag tag-volt text-[10px]">LVL {level}</span>
                   </div>
                 </div>
               </div>
               
               {/* Date Display */}
-              <div className="hidden md:flex items-center gap-2 bg-slate-800/60 px-3 py-2 rounded-xl border border-slate-600/30">
-                <Calendar className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-white font-medium">
+              <div className="hidden md:flex items-center gap-3 glass-dark px-4 py-2">
+                <IconCalendar className="w-4 h-4 text-[#666]" />
+                <span className="text-caption text-[#a0a0a0]">
                   {monthNames[month - 1]} {day}, {year}
                 </span>
               </div>
               
               {/* Speed Controls */}
-              <div className="hidden sm:flex items-center gap-1 bg-slate-800/60 px-2 py-1 rounded-xl border border-slate-600/30">
-                <button
-                  onClick={() => setSpeed(0)}
-                  className={`p-1.5 rounded-lg transition-colors ${speed === 0 ? 'bg-violet-500 text-white' : 'text-gray-400 hover:text-white'}`}
-                >
-                  <Pause className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setSpeed(1)}
-                  className={`p-1.5 rounded-lg transition-colors ${speed === 1 ? 'bg-violet-500 text-white' : 'text-gray-400 hover:text-white'}`}
-                >
-                  <Play className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setSpeed(2)}
-                  className={`p-1.5 rounded-lg transition-colors ${speed === 2 ? 'bg-violet-500 text-white' : 'text-gray-400 hover:text-white'}`}
-                >
-                  <FastForward className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setSpeed(3)}
-                  className={`p-1.5 rounded-lg transition-colors ${speed === 3 ? 'bg-violet-500 text-white' : 'text-gray-400 hover:text-white'}`}
-                >
-                  <FastForward className="w-4 h-4" />
-                  <FastForward className="w-4 h-4 -ml-2" />
-                </button>
+              <div className="hidden sm:flex items-center gap-1 glass-dark px-2 py-1">
+                {[0, 1, 2, 3].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSpeed(s as 0 | 1 | 2 | 3)}
+                    className={`p-2 transition-all ${
+                      speed === s 
+                        ? 'bg-white text-black' 
+                        : 'text-[#666] hover:text-white'
+                    }`}
+                  >
+                    {s === 0 ? (
+                      <Pause className="w-4 h-4" />
+                    ) : s === 1 ? (
+                      <Play className="w-4 h-4" />
+                    ) : (
+                      <div className="flex">
+                        <FastForward className="w-4 h-4" />
+                        {s === 3 && <FastForward className="w-4 h-4 -ml-2" />}
+                      </div>
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
             
-            {/* Center - Currency & Stats */}
-            <div className="flex items-center gap-2 sm:gap-4">
+            {/* Center - Stats */}
+            <div className="flex items-center gap-3">
               {/* Money */}
               <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className="flex items-center gap-2 bg-gradient-to-r from-emerald-900/60 to-green-900/60 px-3 py-2 rounded-xl border border-emerald-500/30"
+                whileHover={{ scale: 1.02 }}
+                className="flex items-center gap-3 glass-dark px-4 py-2 border-l-2 border-[#00ff88]"
               >
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
-                  <DollarSign className="w-3.5 h-3.5 text-white" />
-                </div>
+                <IconMoney className="w-5 h-5 text-[#00ff88]" />
                 <div>
-                  <div className="text-xs text-emerald-300">Money</div>
-                  <div className="font-bold text-white text-sm">${formatNumber(stats.money)}</div>
+                  <div className="text-caption text-[#666] text-[10px]">FUNDS</div>
+                  <div className="stat-value text-white text-sm">${formatNumber(stats.money)}</div>
                 </div>
               </motion.div>
               
               {/* Population */}
               <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-900/60 to-indigo-900/60 px-3 py-2 rounded-xl border border-blue-500/30"
+                whileHover={{ scale: 1.02 }}
+                className="flex items-center gap-3 glass-dark px-4 py-2 border-l-2 border-[#00ffff]"
               >
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
-                  <Users className="w-3.5 h-3.5 text-white" />
-                </div>
+                <IconPeople className="w-5 h-5 text-[#00ffff]" />
                 <div>
-                  <div className="text-xs text-blue-300">Population</div>
-                  <div className="font-bold text-white text-sm">{formatNumber(stats.population)}</div>
+                  <div className="text-caption text-[#666] text-[10px]">POP</div>
+                  <div className="stat-value text-white text-sm">{formatNumber(stats.population)}</div>
                 </div>
               </motion.div>
               
               {/* Jobs */}
               <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className="hidden lg:flex items-center gap-2 bg-gradient-to-r from-amber-900/60 to-yellow-900/60 px-3 py-2 rounded-xl border border-amber-500/30"
+                whileHover={{ scale: 1.02 }}
+                className="hidden lg:flex items-center gap-3 glass-dark px-4 py-2 border-l-2 border-[#ffaa00]"
               >
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center">
-                  <Briefcase className="w-3.5 h-3.5 text-white" />
-                </div>
+                <IconWork className="w-5 h-5 text-[#ffaa00]" />
                 <div>
-                  <div className="text-xs text-amber-300">Jobs</div>
-                  <div className="font-bold text-white text-sm">{formatNumber(stats.jobs)}</div>
+                  <div className="text-caption text-[#666] text-[10px]">JOBS</div>
+                  <div className="stat-value text-white text-sm">{formatNumber(stats.jobs)}</div>
                 </div>
               </motion.div>
             </div>
             
-            {/* Right - Menu */}
-            <div className="flex items-center gap-2 sm:gap-4">
+            {/* Right - Actions */}
+            <div className="flex items-center gap-3">
               {/* Income indicator */}
-              <div className="hidden lg:flex items-center gap-2 bg-slate-800/60 px-3 py-2 rounded-xl border border-slate-600/30">
-                <TrendingUp className={`w-4 h-4 ${stats.income - stats.expenses >= 0 ? 'text-emerald-400' : 'text-red-400'}`} />
+              <div className="hidden lg:flex items-center gap-3 glass-dark px-4 py-2">
+                <TrendingUp className={`w-4 h-4 ${
+                  stats.income - stats.expenses >= 0 ? 'text-[#00ff88]' : 'text-[#ff3366]'
+                }`} />
                 <div>
-                  <div className="text-xs text-gray-400">Net Income</div>
-                  <div className={`font-bold text-sm ${stats.income - stats.expenses >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {stats.income - stats.expenses >= 0 ? '+' : ''}{formatNumber(stats.income - stats.expenses)}/mo
+                  <div className="text-caption text-[#666] text-[10px]">NET</div>
+                  <div className={`stat-value text-sm ${
+                    stats.income - stats.expenses >= 0 ? 'text-[#00ff88]' : 'text-[#ff3366]'
+                  }`}>
+                    {stats.income - stats.expenses >= 0 ? '+' : ''}{formatNumber(stats.income - stats.expenses)}
                   </div>
                 </div>
               </div>
               
               {/* Shop Button */}
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setShowShop(true)}
-                className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-2 rounded-xl font-semibold text-white shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 transition-shadow"
+                className="hidden sm:flex items-center gap-2 btn-primary px-5 py-3"
               >
-                <ShoppingBag className="w-4 h-4" />
-                Shop
+                <Plus className="w-4 h-4" />
+                <span className="text-sm">BUILD</span>
               </motion.button>
               
               {/* Mobile Menu */}
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="sm:hidden p-2 rounded-lg bg-white/10"
+                className="sm:hidden p-3 glass-dark"
               >
                 {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -221,45 +266,39 @@ export default function GameHUD() {
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
-        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
       >
-        <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl p-2 border border-white/10 shadow-2xl">
+        <div className="glass-dark p-2">
           <div className="flex items-center gap-1">
             {tools.map((tool) => (
               <motion.button
                 key={tool}
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setTool(tool)}
-                className={`relative p-3 rounded-xl transition-all ${
+                className={`relative p-3 transition-all ${
                   selectedTool === tool
-                    ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/50'
-                    : 'text-gray-400 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-black'
+                    : 'text-[#666] hover:text-white hover:bg-white/5'
                 }`}
               >
-                <span className="text-xl">{TOOL_INFO[tool].icon}</span>
-                {selectedTool === tool && (
-                  <motion.div
-                    layoutId="tool-indicator"
-                    className="absolute inset-0 bg-violet-500 rounded-xl -z-10"
-                    transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
-                  />
-                )}
+                {TOOL_ICONS[tool]}
               </motion.button>
             ))}
           </div>
           
-          {/* Tool info tooltip */}
+          {/* Tool info */}
           {selectedTool !== 'select' && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 rounded-lg border border-white/10 whitespace-nowrap"
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 glass-dark px-4 py-2 whitespace-nowrap"
             >
-              <div className="font-semibold text-white text-sm">{TOOL_INFO[selectedTool].name}</div>
-              <div className="text-gray-400 text-xs">{TOOL_INFO[selectedTool].description}</div>
+              <div className="text-caption text-white text-xs">{TOOL_INFO[selectedTool].name}</div>
               {TOOL_INFO[selectedTool].cost > 0 && (
-                <div className="text-emerald-400 text-xs mt-1">${TOOL_INFO[selectedTool].cost}</div>
+                <div className="text-caption text-[#00ff88] text-[10px] mt-1">
+                  ${TOOL_INFO[selectedTool].cost}
+                </div>
               )}
             </motion.div>
           )}
@@ -273,49 +312,38 @@ export default function GameHUD() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-20 left-4 right-4 z-50 bg-gray-900/95 backdrop-blur-lg rounded-2xl p-4 border border-white/10"
+            className="fixed top-24 left-4 right-4 z-50 glass-dark p-4"
           >
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-2 bg-emerald-900/40 p-3 rounded-xl">
-                <DollarSign className="w-5 h-5 text-emerald-400" />
-                <div>
-                  <div className="text-xs text-emerald-300">Money</div>
-                  <div className="font-bold text-white">${formatNumber(stats.money)}</div>
-                </div>
+              <div className="glass-light p-3 border-l-2 border-[#00ff88]">
+                <div className="text-caption text-[#666] text-[10px]">FUNDS</div>
+                <div className="stat-value text-white">${formatNumber(stats.money)}</div>
               </div>
-              <div className="flex items-center gap-2 bg-blue-900/40 p-3 rounded-xl">
-                <Users className="w-5 h-5 text-blue-400" />
-                <div>
-                  <div className="text-xs text-blue-300">Population</div>
-                  <div className="font-bold text-white">{formatNumber(stats.population)}</div>
-                </div>
+              <div className="glass-light p-3 border-l-2 border-[#00ffff]">
+                <div className="text-caption text-[#666] text-[10px]">POP</div>
+                <div className="stat-value text-white">{formatNumber(stats.population)}</div>
               </div>
-              <div className="flex items-center gap-2 bg-amber-900/40 p-3 rounded-xl">
-                <Briefcase className="w-5 h-5 text-amber-400" />
-                <div>
-                  <div className="text-xs text-amber-300">Jobs</div>
-                  <div className="font-bold text-white">{formatNumber(stats.jobs)}</div>
-                </div>
+              <div className="glass-light p-3 border-l-2 border-[#ffaa00]">
+                <div className="text-caption text-[#666] text-[10px]">JOBS</div>
+                <div className="stat-value text-white">{formatNumber(stats.jobs)}</div>
               </div>
-              <div className="flex items-center gap-2 bg-slate-800/40 p-3 rounded-xl">
-                <Calendar className="w-5 h-5 text-slate-400" />
-                <div>
-                  <div className="text-xs text-slate-300">Date</div>
-                  <div className="font-bold text-white">{monthNames[month - 1]} {year}</div>
-                </div>
+              <div className="glass-light p-3">
+                <div className="text-caption text-[#666] text-[10px]">DATE</div>
+                <div className="stat-value text-white">{monthNames[month - 1]} {year}</div>
               </div>
             </div>
             
             {/* Speed controls */}
-            <div className="flex items-center justify-center gap-2 mt-3 mb-3">
+            <div className="flex items-center justify-center gap-2 mt-4 mb-4">
               {[0, 1, 2, 3].map((s) => (
                 <button
                   key={s}
                   onClick={() => setSpeed(s as 0 | 1 | 2 | 3)}
-                  className={`p-2 rounded-lg transition-colors ${speed === s ? 'bg-violet-500 text-white' : 'bg-white/10 text-gray-400'}`}
+                  className={`p-3 transition-all ${
+                    speed === s ? 'bg-white text-black' : 'glass-light text-[#666]'
+                  }`}
                 >
                   {s === 0 ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  {s > 1 && <span className="text-xs">{s}x</span>}
                 </button>
               ))}
             </div>
@@ -325,10 +353,10 @@ export default function GameHUD() {
                 setShowShop(true);
                 setShowMobileMenu(false);
               }}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-3 rounded-xl font-semibold text-white"
+              className="w-full btn-primary py-4 flex items-center justify-center gap-2"
             >
-              <ShoppingBag className="w-5 h-5" />
-              Open Shop
+              <Plus className="w-5 h-5" />
+              BUILD
             </button>
           </motion.div>
         )}
@@ -341,9 +369,9 @@ export default function GameHUD() {
           animate={{ x: 0 }}
           className="fixed top-24 right-4 z-40"
         >
-          <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-600 to-amber-600 px-3 py-2 rounded-xl shadow-lg shadow-yellow-500/30">
-            <Zap className="w-4 h-4 text-white animate-pulse" />
-            <span className="font-bold text-white">{boostMultiplier}x Boost Active!</span>
+          <div className="flex items-center gap-2 bg-[#c8ff00] text-black px-4 py-2 glow-volt">
+            <IconZap className="w-4 h-4" />
+            <span className="text-caption text-xs">{boostMultiplier}X BOOST</span>
           </div>
         </motion.div>
       )}
