@@ -65,7 +65,7 @@ export default function Home() {
           >
             <LogoMark className="w-20 h-20 mx-auto text-white mb-8" />
             <h1 className="text-display text-6xl md:text-8xl text-white tracking-tighter">
-              FARCITY
+              CLAUDITY
             </h1>
             <div className="h-1 w-32 mx-auto mt-4 bg-gradient-to-r from-[#c8ff00] to-[#00ffff]" />
           </motion.div>

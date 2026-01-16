@@ -427,7 +427,7 @@ export default function Shop() {
                     </div>
                     
                     <div className="flex-1 text-center md:text-left">
-                      <h3 className="text-headline text-xl text-white">FARCITY PRO</h3>
+                      <h3 className="text-headline text-xl text-white">CLAUDITY PRO</h3>
                       <p className="text-body text-sm text-[#a0a0a0] mt-2">
                         2X income. Early access. Exclusive items. Monthly bonuses.
                       </p>

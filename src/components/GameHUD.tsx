@@ -152,7 +152,7 @@ export default function GameHUD() {
                   <span className="text-headline text-black text-xs">FC</span>
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-headline text-sm text-white">FARCITY</h1>
+                  <h1 className="text-headline text-sm text-white">CLAUDITY</h1>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="tag tag-volt text-[10px]">LVL {level}</span>
                   </div>

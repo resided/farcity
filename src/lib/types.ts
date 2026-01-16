@@ -1,4 +1,4 @@
-// Core game types for FarCity - Enhanced with simulation features
+// Core game types for Claudity - Enhanced with simulation features
 
 export type BuildingCategory = 
   | 'residential'

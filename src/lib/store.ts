@@ -708,7 +708,7 @@ export const useGameStore = create<GameStore>()(
       reset: () => set(createInitialState()),
     }),
     {
-      name: 'farcity-game',
+      name: 'claudity-game',
       partialize: (state) => ({
         id: state.id,
         cityName: state.cityName,
