@@ -372,7 +372,7 @@ export const useGameStore = create<GameStore>()(
       },
       
       // City building actions
-      setTool: (tool) => set({ selectedTool: tool, activePanel: 'none' }),
+      setTool: (tool) => set({ selectedTool: tool, activePanel: 'none', selectedBuilding: null }),
       
       setSpeed: (speed) => set({ speed }),
       
