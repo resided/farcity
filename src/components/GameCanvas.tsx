@@ -93,27 +93,31 @@ export default function GameCanvas() {
   useEffect(() => {
     const loadSprites = async () => {
       try {
-        // Load main sprite sheet - try without filtering first for debugging
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
+        console.log('Loading sprite sheet...');
         
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => {
-            console.log('Sprite sheet loaded:', img.width, 'x', img.height);
-            spriteSheetRef.current = img;
-            resolve();
-          };
-          img.onerror = (e) => {
-            console.error('Failed to load sprite sheet:', e);
-            reject(e);
-          };
-          img.src = SPRITE_SHEETS.main;
-        });
+        // Load main sprite sheet with red background filtering
+        spriteSheetRef.current = await loadSpriteImage(SPRITE_SHEETS.main, true);
+        console.log('Sprite sheet loaded and filtered:', spriteSheetRef.current.width, 'x', spriteSheetRef.current.height);
         
         setSpritesLoaded(true);
-        console.log('Sprites ready!');
       } catch (error) {
-        console.error('Failed to load sprite sheets:', error);
+        console.error('Failed to load sprite sheet with filtering, trying without:', error);
+        
+        // Fallback: load without filtering
+        try {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = reject;
+            img.src = SPRITE_SHEETS.main;
+          });
+          spriteSheetRef.current = img;
+          setSpritesLoaded(true);
+          console.log('Sprite sheet loaded (unfiltered):', img.width, 'x', img.height);
+        } catch (e2) {
+          console.error('Failed to load sprite sheet:', e2);
+        }
       }
     };
     
