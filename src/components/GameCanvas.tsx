@@ -10,38 +10,42 @@ import {
   ZOOM_MAX,
   CAR_MIN_ZOOM,
   PEDESTRIAN_MIN_ZOOM,
-  DIRECTION_META,
 } from '@/lib/rendering/constants';
 import {
   gridToScreen,
   screenToGrid,
   isRoadTile,
-  shadeColor,
 } from '@/lib/rendering/utils';
 import {
-  drawTile,
-  drawGrassTile,
-  drawWaterTile,
   drawHighlightedTile,
   drawZoneIndicator,
-  drawRoadTile,
-  drawBuilding,
-  drawTree,
-  drawPark,
   isValidPlacement,
 } from '@/lib/rendering/drawing';
 import {
   spawnRandomCar,
   updateCar,
   drawCars,
-  getTrafficLightState,
 } from '@/lib/rendering/vehicles';
 import {
   createPedestrian,
   updatePedestrian,
   drawPedestrians,
 } from '@/lib/rendering/pedestrians';
+import {
+  getSpriteCoords,
+  getSpriteRenderInfo,
+  getActiveSpritePack,
+} from '@/lib/rendering/spriteConfig';
+import { loadSpriteImage } from '@/lib/rendering/imageLoader';
 import { Car, Pedestrian, Tile } from '@/lib/types';
+
+// Sprite sheet paths
+const SPRITE_SHEETS = {
+  main: '/assets/sprites_red_water_new.webp',
+  mainFallback: '/assets/sprites_red_water_new.png',
+  water: '/assets/water.webp',
+  waterFallback: '/assets/water.png',
+};
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -53,6 +57,11 @@ export default function GameCanvas() {
   const animationRef = useRef<number>(0);
   const timeRef = useRef(0);
   const lastTimeRef = useRef(0);
+  
+  // Sprite sheets
+  const spriteSheetRef = useRef<HTMLImageElement | null>(null);
+  const waterSheetRef = useRef<HTMLImageElement | null>(null);
+  const [spritesLoaded, setSpritesLoaded] = useState(false);
   
   // Vehicle systems
   const carsRef = useRef<Car[]>([]);
@@ -79,6 +88,33 @@ export default function GameCanvas() {
     simulateTick,
     gameVersion,
   } = useGameStore();
+  
+  // Load sprite sheets
+  useEffect(() => {
+    const loadSprites = async () => {
+      try {
+        // Load main sprite sheet
+        try {
+          spriteSheetRef.current = await loadSpriteImage(SPRITE_SHEETS.main, true);
+        } catch {
+          spriteSheetRef.current = await loadSpriteImage(SPRITE_SHEETS.mainFallback, true);
+        }
+        
+        // Load water sprite sheet
+        try {
+          waterSheetRef.current = await loadSpriteImage(SPRITE_SHEETS.water, false);
+        } catch {
+          waterSheetRef.current = await loadSpriteImage(SPRITE_SHEETS.waterFallback, false);
+        }
+        
+        setSpritesLoaded(true);
+      } catch (error) {
+        console.error('Failed to load sprite sheets:', error);
+      }
+    };
+    
+    loadSprites();
+  }, []);
   
   // Clear vehicles when game version changes (new game or loaded)
   useEffect(() => {
@@ -119,6 +155,302 @@ export default function GameCanvas() {
     return () => clearInterval(interval);
   }, [speed, simulateTick]);
   
+  // Draw sprite from sheet
+  const drawSprite = useCallback((
+    ctx: CanvasRenderingContext2D,
+    buildingType: string,
+    screenX: number,
+    screenY: number,
+    tileX: number,
+    tileY: number
+  ): boolean => {
+    const sheet = spriteSheetRef.current;
+    if (!sheet) return false;
+    
+    const renderInfo = getSpriteRenderInfo(
+      buildingType,
+      screenX,
+      screenY,
+      sheet.width,
+      sheet.height,
+      tileX,
+      tileY
+    );
+    
+    if (!renderInfo) return false;
+    
+    const { coords, drawX, drawY, destWidth, destHeight, shouldFlip } = renderInfo;
+    
+    ctx.save();
+    
+    if (shouldFlip) {
+      ctx.translate(drawX + destWidth, drawY);
+      ctx.scale(-1, 1);
+      ctx.drawImage(
+        sheet,
+        coords.sx, coords.sy, coords.sw, coords.sh,
+        0, 0, destWidth, destHeight
+      );
+    } else {
+      ctx.drawImage(
+        sheet,
+        coords.sx, coords.sy, coords.sw, coords.sh,
+        drawX, drawY, destWidth, destHeight
+      );
+    }
+    
+    ctx.restore();
+    
+    return true;
+  }, []);
+  
+  // Draw grass tile with sprite-like appearance
+  const drawGrassTile = useCallback((
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    gridX: number,
+    gridY: number
+  ) => {
+    const seed = (gridX * 31 + gridY * 17) % 100;
+    const shade = 0.9 + (seed / 500);
+    
+    // Create isometric grass tile
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+    ctx.lineTo(x, y + TILE_HEIGHT);
+    ctx.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+    ctx.closePath();
+    
+    // Natural grass gradient
+    const gradient = ctx.createLinearGradient(
+      x - TILE_WIDTH / 2, y,
+      x + TILE_WIDTH / 2, y + TILE_HEIGHT
+    );
+    gradient.addColorStop(0, `rgb(${Math.floor(74 * shade)}, ${Math.floor(117 * shade)}, ${Math.floor(58 * shade)})`);
+    gradient.addColorStop(0.5, `rgb(${Math.floor(62 * shade)}, ${Math.floor(99 * shade)}, ${Math.floor(49 * shade)})`);
+    gradient.addColorStop(1, `rgb(${Math.floor(52 * shade)}, ${Math.floor(85 * shade)}, ${Math.floor(42 * shade)})`);
+    
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    
+    // Subtle grid line
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }, []);
+  
+  // Draw water tile
+  const drawWaterTile = useCallback((
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    time: number
+  ) => {
+    const wave = Math.sin(time / 800 + x * 0.05) * 1.5;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y + wave);
+    ctx.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2 + wave);
+    ctx.lineTo(x, y + TILE_HEIGHT + wave);
+    ctx.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2 + wave);
+    ctx.closePath();
+    
+    // Deep water gradient
+    const gradient = ctx.createLinearGradient(x, y, x, y + TILE_HEIGHT);
+    gradient.addColorStop(0, '#1e3a5f');
+    gradient.addColorStop(0.3, '#2a5078');
+    gradient.addColorStop(0.7, '#1e3a5f');
+    gradient.addColorStop(1, '#162d4a');
+    
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    
+    // Water shimmer
+    const shimmer = (Math.sin(time / 400 + x * 0.1 + y * 0.1) + 1) / 2;
+    ctx.fillStyle = `rgba(100, 180, 255, ${shimmer * 0.15})`;
+    ctx.fill();
+    
+    ctx.strokeStyle = 'rgba(100, 180, 255, 0.3)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }, []);
+  
+  // Draw road tile
+  const drawRoadTile = useCallback((
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    gridX: number,
+    gridY: number,
+    g: Tile[][],
+    gSize: number,
+    trafficTime: number,
+    z: number
+  ) => {
+    // Check adjacent roads
+    const hasNorth = gridY > 0 && isRoadTile(g, gSize, gridX, gridY - 1);
+    const hasSouth = gridY < gSize - 1 && isRoadTile(g, gSize, gridX, gridY + 1);
+    const hasEast = gridX < gSize - 1 && isRoadTile(g, gSize, gridX + 1, gridY);
+    const hasWest = gridX > 0 && isRoadTile(g, gSize, gridX - 1, gridY);
+    
+    const w = TILE_WIDTH;
+    const h = TILE_HEIGHT;
+    
+    // Road base
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w / 2, y + h / 2);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x - w / 2, y + h / 2);
+    ctx.closePath();
+    ctx.fillStyle = '#3a3a3a';
+    ctx.fill();
+    
+    // Sidewalk edges
+    const sidewalkWidth = w * 0.1;
+    ctx.fillStyle = '#5a5a5a';
+    
+    if (!hasNorth) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - w / 2, y + h / 2);
+      ctx.lineTo(x - w / 2 + sidewalkWidth, y + h / 2 - sidewalkWidth * 0.5);
+      ctx.lineTo(x, y + sidewalkWidth * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    if (!hasEast) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + w / 2, y + h / 2);
+      ctx.lineTo(x + w / 2 - sidewalkWidth, y + h / 2 - sidewalkWidth * 0.5);
+      ctx.lineTo(x, y + sidewalkWidth * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    if (!hasSouth) {
+      ctx.beginPath();
+      ctx.moveTo(x, y + h);
+      ctx.lineTo(x + w / 2, y + h / 2);
+      ctx.lineTo(x + w / 2 - sidewalkWidth, y + h / 2 + sidewalkWidth * 0.5);
+      ctx.lineTo(x, y + h - sidewalkWidth * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    if (!hasWest) {
+      ctx.beginPath();
+      ctx.moveTo(x, y + h);
+      ctx.lineTo(x - w / 2, y + h / 2);
+      ctx.lineTo(x - w / 2 + sidewalkWidth, y + h / 2 + sidewalkWidth * 0.5);
+      ctx.lineTo(x, y + h - sidewalkWidth * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    // Lane markings
+    if (z >= 0.5) {
+      ctx.strokeStyle = '#ffcc00';
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([3, 4]);
+      
+      const cx = x;
+      const cy = y + h / 2;
+      
+      if (hasNorth && hasSouth) {
+        ctx.beginPath();
+        ctx.moveTo(cx - w * 0.2, cy - h * 0.2);
+        ctx.lineTo(cx + w * 0.2, cy + h * 0.2);
+        ctx.stroke();
+      }
+      
+      if (hasEast && hasWest) {
+        ctx.beginPath();
+        ctx.moveTo(cx + w * 0.2, cy - h * 0.2);
+        ctx.lineTo(cx - w * 0.2, cy + h * 0.2);
+        ctx.stroke();
+      }
+      
+      ctx.setLineDash([]);
+    }
+    
+    // Traffic light at intersections
+    const connections = [hasNorth, hasSouth, hasEast, hasWest].filter(Boolean).length;
+    if (connections >= 3 && z >= 0.6) {
+      const cycleTime = trafficTime % 7.6;
+      let lightColor: string;
+      
+      if (cycleTime < 3) {
+        lightColor = '#22c55e';
+      } else if (cycleTime < 3.8) {
+        lightColor = '#eab308';
+      } else if (cycleTime < 6.8) {
+        lightColor = '#ef4444';
+      } else {
+        lightColor = '#eab308';
+      }
+      
+      ctx.fillStyle = lightColor;
+      ctx.beginPath();
+      ctx.arc(x, y - 3, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Glow
+      ctx.shadowColor = lightColor;
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }, []);
+  
+  // Draw rail tile
+  const drawRailTile = useCallback((
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number
+  ) => {
+    const w = TILE_WIDTH;
+    const h = TILE_HEIGHT;
+    
+    // Gravel base
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w / 2, y + h / 2);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x - w / 2, y + h / 2);
+    ctx.closePath();
+    ctx.fillStyle = '#4a4a4a';
+    ctx.fill();
+    
+    // Rail tracks
+    ctx.strokeStyle = '#8a8a8a';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.35, y + h * 0.35);
+    ctx.lineTo(x + w * 0.35, y + h * 0.65);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.35, y + h * 0.45);
+    ctx.lineTo(x + w * 0.35, y + h * 0.75);
+    ctx.stroke();
+    
+    // Cross ties
+    ctx.strokeStyle = '#5a4a3a';
+    ctx.lineWidth = 3;
+    for (let i = -2; i <= 2; i++) {
+      const offset = i * w * 0.12;
+      ctx.beginPath();
+      ctx.moveTo(x + offset - w * 0.08, y + h * 0.5 + offset * 0.5 - h * 0.08);
+      ctx.lineTo(x + offset + w * 0.08, y + h * 0.5 + offset * 0.5 + h * 0.08);
+      ctx.stroke();
+    }
+  }, []);
+  
   // Main render loop
   const render = useCallback(() => {
     const canvas = canvasRef.current;
@@ -137,7 +469,6 @@ export default function GameCanvas() {
     
     // Spawn and update cars
     if (zoom >= CAR_MIN_ZOOM) {
-      // Count road tiles for scaling
       let roadTileCount = 0;
       for (let y = 0; y < gridSize; y++) {
         for (let x = 0; x < gridSize; x++) {
@@ -158,7 +489,6 @@ export default function GameCanvas() {
         carSpawnTimerRef.current = 0.5 + Math.random() * 0.5;
       }
       
-      // Update cars
       carsRef.current = carsRef.current.filter(car =>
         updateCar(car, grid, gridSize, delta, speedMultiplier, trafficLightTimerRef.current, carsRef.current)
       );
@@ -172,7 +502,6 @@ export default function GameCanvas() {
       
       pedestrianSpawnTimerRef.current -= delta;
       if (pedestriansRef.current.length < maxPedestrians && pedestrianSpawnTimerRef.current <= 0) {
-        // Find residential and destination tiles
         const residentials: { x: number; y: number }[] = [];
         const destinations: { x: number; y: number; type: 'residential' | 'commercial' | 'industrial' | 'park' }[] = [];
         
@@ -198,17 +527,14 @@ export default function GameCanvas() {
           const home = residentials[Math.floor(Math.random() * residentials.length)];
           const dest = destinations[Math.floor(Math.random() * destinations.length)];
           
-          // Simple path along roads
           const path: { x: number; y: number }[] = [];
           let cx = home.x, cy = home.y;
           path.push({ x: cx, y: cy });
           
-          // Move towards destination
           for (let i = 0; i < 50 && (cx !== dest.x || cy !== dest.y); i++) {
             const dx = dest.x - cx;
             const dy = dest.y - cy;
             
-            // Try to move in the dominant direction
             if (Math.abs(dx) > Math.abs(dy)) {
               const nx = cx + Math.sign(dx);
               if (isRoadTile(grid, gridSize, nx, cy)) {
@@ -225,7 +551,6 @@ export default function GameCanvas() {
               continue;
             }
             
-            // Try perpendicular
             const nx = cx + Math.sign(dx);
             if (isRoadTile(grid, gridSize, nx, cy)) {
               cx = nx;
@@ -253,7 +578,6 @@ export default function GameCanvas() {
         pedestrianSpawnTimerRef.current = 0.5;
       }
       
-      // Update pedestrians
       pedestriansRef.current = pedestriansRef.current.filter(ped =>
         updatePedestrian(ped, delta, speedMultiplier, grid, gridSize, pedestriansRef.current)
       );
@@ -261,12 +585,8 @@ export default function GameCanvas() {
       pedestriansRef.current = [];
     }
     
-    // Clear canvas with gradient background
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#0f0f1a');
-    gradient.addColorStop(0.5, '#0a0a12');
-    gradient.addColorStop(1, '#050508');
-    ctx.fillStyle = gradient;
+    // Clear canvas
+    ctx.fillStyle = '#0a0a0f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Apply zoom and offset
@@ -296,73 +616,112 @@ export default function GameCanvas() {
             break;
             
           case 'rail':
-            // Draw rail with darker color
-            drawTile(ctx, screenX, screenY, '#3a3a4a', '#2a2a3a');
-            // Rail tracks
-            ctx.strokeStyle = '#6b7280';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(screenX - TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.35);
-            ctx.lineTo(screenX + TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.65);
-            ctx.moveTo(screenX - TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.45);
-            ctx.lineTo(screenX + TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.75);
-            ctx.stroke();
+            drawRailTile(ctx, screenX, screenY);
             break;
             
           case 'park':
-            drawPark(ctx, screenX, screenY, x, y);
+            drawGrassTile(ctx, screenX, screenY, x, y);
+            // Try sprite, fallback to procedural
+            if (!drawSprite(ctx, 'park', screenX, screenY, x, y)) {
+              // Procedural park
+              ctx.fillStyle = '#4a8a43';
+              ctx.beginPath();
+              ctx.arc(screenX, screenY + TILE_HEIGHT / 2, 8, 0, Math.PI * 2);
+              ctx.fill();
+            }
             break;
             
           case 'tree':
             drawGrassTile(ctx, screenX, screenY, x, y);
-            drawTree(ctx, screenX, screenY + TILE_HEIGHT * 0.3, (x * 31 + y * 17) % 100);
+            // Try sprite, fallback to procedural
+            if (!drawSprite(ctx, 'tree', screenX, screenY, x, y)) {
+              // Procedural tree
+              const seed = (x * 31 + y * 17) % 100;
+              const trunkHeight = 8 + (seed % 4);
+              const foliageSize = 14 + (seed % 6);
+              
+              ctx.fillStyle = '#5d4037';
+              ctx.fillRect(screenX - 2, screenY + TILE_HEIGHT * 0.3 - trunkHeight, 4, trunkHeight);
+              
+              ctx.fillStyle = '#2d5a27';
+              ctx.beginPath();
+              ctx.arc(screenX, screenY + TILE_HEIGHT * 0.3 - trunkHeight - foliageSize / 2, foliageSize / 2, 0, Math.PI * 2);
+              ctx.fill();
+            }
             break;
             
           case 'building':
             drawGrassTile(ctx, screenX, screenY, x, y);
-            // Draw zone building
+            
+            // Draw zone building using sprites
             if (tile.building.constructionProgress >= 100) {
-              const buildingColor = tile.zone === 'residential' ? '#22c55e' :
-                                   tile.zone === 'commercial' ? '#3b82f6' : '#eab308';
-              const height = TILE_HEIGHT * (1 + tile.building.level * 0.5);
+              // Determine building type based on zone and level
+              let buildingType: string;
+              const level = tile.building.level;
               
-              // Building body
-              ctx.fillStyle = shadeColor(buildingColor, -20);
-              ctx.beginPath();
-              ctx.moveTo(screenX - TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.35);
-              ctx.lineTo(screenX - TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.35 - height);
-              ctx.lineTo(screenX, screenY - height);
-              ctx.lineTo(screenX, screenY);
-              ctx.closePath();
-              ctx.fill();
+              if (tile.zone === 'residential') {
+                if (level <= 1) buildingType = 'house_small';
+                else if (level <= 2) buildingType = 'house_medium';
+                else if (level <= 3) buildingType = 'mansion';
+                else buildingType = 'apartment_low';
+              } else if (tile.zone === 'commercial') {
+                if (level <= 1) buildingType = 'shop_small';
+                else if (level <= 2) buildingType = 'shop_medium';
+                else buildingType = 'office_low';
+              } else {
+                if (level <= 1) buildingType = 'factory_small';
+                else if (level <= 2) buildingType = 'factory_medium';
+                else buildingType = 'warehouse';
+              }
               
-              ctx.fillStyle = shadeColor(buildingColor, -40);
-              ctx.beginPath();
-              ctx.moveTo(screenX + TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.65);
-              ctx.lineTo(screenX + TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.65 - height);
-              ctx.lineTo(screenX, screenY - height);
-              ctx.lineTo(screenX, screenY);
-              ctx.closePath();
-              ctx.fill();
-              
-              ctx.fillStyle = buildingColor;
-              ctx.beginPath();
-              ctx.moveTo(screenX, screenY - height);
-              ctx.lineTo(screenX + TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.15 - height);
-              ctx.lineTo(screenX, screenY + TILE_HEIGHT * 0.3 - height);
-              ctx.lineTo(screenX - TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.15 - height);
-              ctx.closePath();
-              ctx.fill();
-              
-              // Windows
-              ctx.fillStyle = 'rgba(255, 255, 200, 0.6)';
-              const windowRows = Math.floor(height / 15);
-              for (let row = 0; row < windowRows; row++) {
-                ctx.fillRect(screenX - 5, screenY - 10 - row * 12, 3, 5);
-                ctx.fillRect(screenX + 2, screenY - 10 - row * 12, 3, 5);
+              // Try sprite rendering
+              if (!drawSprite(ctx, buildingType, screenX, screenY, x, y)) {
+                // Fallback procedural building
+                const buildingColor = tile.zone === 'residential' ? '#22c55e' :
+                                     tile.zone === 'commercial' ? '#3b82f6' : '#eab308';
+                const height = TILE_HEIGHT * (1 + level * 0.5);
+                
+                // Simple 3D box
+                // Left face
+                ctx.fillStyle = shadeColor(buildingColor, -20);
+                ctx.beginPath();
+                ctx.moveTo(screenX - TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.35);
+                ctx.lineTo(screenX - TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.35 - height);
+                ctx.lineTo(screenX, screenY - height);
+                ctx.lineTo(screenX, screenY);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Right face
+                ctx.fillStyle = shadeColor(buildingColor, -40);
+                ctx.beginPath();
+                ctx.moveTo(screenX + TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.65);
+                ctx.lineTo(screenX + TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.65 - height);
+                ctx.lineTo(screenX, screenY - height);
+                ctx.lineTo(screenX, screenY);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Top face
+                ctx.fillStyle = buildingColor;
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY - height);
+                ctx.lineTo(screenX + TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.15 - height);
+                ctx.lineTo(screenX, screenY + TILE_HEIGHT * 0.3 - height);
+                ctx.lineTo(screenX - TILE_WIDTH * 0.3, screenY + TILE_HEIGHT * 0.15 - height);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Windows
+                ctx.fillStyle = 'rgba(255, 255, 200, 0.7)';
+                const windowRows = Math.floor(height / 15);
+                for (let row = 0; row < windowRows; row++) {
+                  ctx.fillRect(screenX - 5, screenY - 10 - row * 12, 3, 5);
+                  ctx.fillRect(screenX + 2, screenY - 10 - row * 12, 3, 5);
+                }
               }
             } else {
-              // Construction scaffolding
+              // Construction site
               ctx.strokeStyle = '#f97316';
               ctx.lineWidth = 1;
               ctx.setLineDash([3, 3]);
@@ -399,7 +758,7 @@ export default function GameCanvas() {
       drawPedestrians(ctx, pedestriansRef.current, 0, 0, zoom);
     }
     
-    // Draw legacy placed buildings (from original system)
+    // Draw legacy placed buildings (service buildings etc)
     const sortedBuildings = [...buildings].sort((a, b) => (a.x + a.y) - (b.x + b.y));
     for (const placed of sortedBuildings) {
       const building = getBuildingById(placed.buildingId);
@@ -411,10 +770,31 @@ export default function GameCanvas() {
         0, 0
       );
       
-      drawBuilding(ctx, building, screenX, screenY, placed.level, timeRef.current);
+      // Try to draw sprite for service buildings
+      const serviceMapping: Record<string, string> = {
+        'police': 'police_station',
+        'fire': 'fire_station',
+        'hospital': 'hospital',
+        'school': 'school',
+        'power': 'power_plant',
+        'water': 'water_tower',
+      };
+      
+      let drawnAsSprite = false;
+      for (const [key, spriteType] of Object.entries(serviceMapping)) {
+        if (building.id.includes(key)) {
+          drawnAsSprite = drawSprite(ctx, spriteType, screenX, screenY, placed.x, placed.y);
+          break;
+        }
+      }
+      
+      // Fallback to procedural drawing if sprite fails
+      if (!drawnAsSprite) {
+        drawBuildingProcedural(ctx, building, screenX, screenY, placed.level, timeRef.current);
+      }
     }
     
-    // Draw building preview if one is selected
+    // Draw building preview
     if (selectedBuilding && hoveredTile) {
       const building = getBuildingById(selectedBuilding);
       if (building) {
@@ -451,7 +831,7 @@ export default function GameCanvas() {
     ctx.restore();
     
     animationRef.current = requestAnimationFrame(render);
-  }, [grid, gridSize, buildings, selectedBuilding, selectedTool, offset, zoom, speed, hoveredTile]);
+  }, [grid, gridSize, buildings, selectedBuilding, selectedTool, offset, zoom, speed, hoveredTile, drawSprite, drawGrassTile, drawWaterTile, drawRoadTile, drawRailTile]);
   
   useEffect(() => {
     lastTimeRef.current = performance.now();
@@ -521,12 +901,11 @@ export default function GameCanvas() {
         Math.pow(e.clientY - (dragStart.y + offset.y), 2)
       );
       
-      // Only handle click if not dragging
       if (dragDistance < 5 && hoveredTile) {
         if (selectedBuilding) {
-        const building = getBuildingById(selectedBuilding);
+          const building = getBuildingById(selectedBuilding);
           if (building && isValidPlacement(hoveredTile.x, hoveredTile.y, building, buildings, gridSize, getBuildingById)) {
-          placeBuilding(selectedBuilding, hoveredTile.x, hoveredTile.y);
+            placeBuilding(selectedBuilding, hoveredTile.x, hoveredTile.y);
           }
         } else if (selectedTool !== 'select') {
           placeAtTile(hoveredTile.x, hoveredTile.y);
@@ -540,7 +919,6 @@ export default function GameCanvas() {
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * delta));
     
-    // Zoom towards mouse position
     const rect = canvasRef.current?.getBoundingClientRect();
     if (rect) {
       const mouseX = e.clientX - rect.left;
@@ -556,7 +934,7 @@ export default function GameCanvas() {
     setZoom(newZoom);
   };
   
-  // Touch handlers for mobile
+  // Touch handlers
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const initialPinchDistanceRef = useRef<number | null>(null);
   const initialZoomRef = useRef<number>(zoom);
@@ -568,7 +946,6 @@ export default function GameCanvas() {
       setIsDragging(true);
       setDragStart({ x: touch.clientX - offset.x, y: touch.clientY - offset.y });
     } else if (e.touches.length === 2) {
-      // Pinch zoom
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       initialPinchDistanceRef.current = Math.hypot(dx, dy);
@@ -601,7 +978,6 @@ export default function GameCanvas() {
       const distance = Math.hypot(dx, dy);
       const duration = Date.now() - touchStartRef.current.time;
       
-      // Tap detection
       if (distance < 10 && duration < 300) {
         const { isoX, isoY } = screenToGrid(
           touch.clientX / zoom - offset.x / zoom,
@@ -639,4 +1015,73 @@ export default function GameCanvas() {
       onTouchEnd={handleTouchEnd}
     />
   );
+}
+
+// Helper: shade color
+function shadeColor(color: string, percent: number): string {
+  const num = parseInt(color.replace('#', ''), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+  const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00ff) + amt));
+  const B = Math.max(0, Math.min(255, (num & 0x0000ff) + amt));
+  return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
+}
+
+// Procedural building fallback
+function drawBuildingProcedural(
+  ctx: CanvasRenderingContext2D,
+  building: { color: string; accentColor: string; size: { width: number; height: number } },
+  x: number,
+  y: number,
+  level: number,
+  time: number
+) {
+  const { color, accentColor, size } = building;
+  const buildingHeight = TILE_HEIGHT * (2 + Math.min(level, 5));
+  
+  const baseWidth = size.width * TILE_WIDTH / 2;
+  const baseHeight = size.height * TILE_HEIGHT / 2;
+  
+  // Left face
+  ctx.beginPath();
+  ctx.moveTo(x - baseWidth / 2, y + baseHeight / 2);
+  ctx.lineTo(x - baseWidth / 2, y + baseHeight / 2 - buildingHeight);
+  ctx.lineTo(x, y - buildingHeight);
+  ctx.lineTo(x, y);
+  ctx.closePath();
+  ctx.fillStyle = shadeColor(color, -20);
+  ctx.fill();
+  
+  // Right face
+  ctx.beginPath();
+  ctx.moveTo(x + baseWidth / 2, y + baseHeight / 2);
+  ctx.lineTo(x + baseWidth / 2, y + baseHeight / 2 - buildingHeight);
+  ctx.lineTo(x, y - buildingHeight);
+  ctx.lineTo(x, y);
+  ctx.closePath();
+  ctx.fillStyle = shadeColor(color, -40);
+  ctx.fill();
+  
+  // Top face
+  ctx.beginPath();
+  ctx.moveTo(x, y - buildingHeight);
+  ctx.lineTo(x + baseWidth / 2, y + baseHeight / 2 - buildingHeight);
+  ctx.lineTo(x, y + baseHeight - buildingHeight);
+  ctx.lineTo(x - baseWidth / 2, y + baseHeight / 2 - buildingHeight);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  
+  // Windows
+  ctx.fillStyle = accentColor;
+  const windowRows = Math.floor(buildingHeight / 12);
+  const windowCols = Math.floor(baseWidth / 16);
+  
+  for (let row = 0; row < windowRows; row++) {
+    for (let col = 0; col < windowCols; col++) {
+      const wx = x - baseWidth / 4 + col * 8 - row * 2;
+      const wy = y - 8 - row * 12;
+      ctx.fillRect(wx - 2, wy - 3, 4, 6);
+    }
+  }
 }

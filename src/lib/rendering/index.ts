@@ -7,3 +7,4 @@ export * from './vehicles';
 export * from './pedestrians';
 export * from './imageLoader';
 export * from './spriteConfig';
+export * from './spriteRenderer';
